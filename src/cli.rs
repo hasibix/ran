@@ -8,7 +8,7 @@ use std::path::PathBuf;
 /// a simple but customizable command-line launcher for games and programs.
 ///
 /// copyright (c) 2026 Hasibix Hasi.
-/// licensed under Apache 2.0.
+/// licensed under apache 2.0.
 #[derive(Parser)]
 #[command(
 	author,
@@ -21,142 +21,218 @@ pub struct Cli {
 	#[arg(
 		long,
 		env = "RANCFG",
-		help = "defaults to (your platform's app data directory)/ran",
-		long_help = "path for config files (e.g. general config or app list)",
+		help = "path for config files (defaults to your platform's app data directory)/ran",
+		long_help = "path for config files (e.g. general config or app list). defaults to your platform's app data directory under 'ran'.",
 	)]
 	pub config: Option<PathBuf>,
 
 	#[command(subcommand)]
-	pub command: Option<Command>,
+	pub cmd: Option<Command>,
 }
 
 #[derive(Subcommand)]
 pub enum Command {
-	Launch(LaunchCmd),
+	/// launches an app with the 'launch' command
+	Launch {
+		/// app to be launched
+		name: String,
+		/// arguments passed to the app
+		args: Vec<String>,
+		/// run the command in the background
+		#[arg(short, long)]
+		background: bool,
+	},
+
+	/// launches a specific command of an app
+	Cmd {
+		/// command to run
+		cmd: String,
+		/// app to be launched
+		name: String,
+		/// arguments passed to the command
+		args: Vec<String>,
+		/// run the command in the background
+		#[arg(short, long)]
+		background: bool,
+	},
+
+	/// application management subcommands
 	#[command(subcommand)]
 	App(AppCmd),
+
+	/// global configuration management
 	#[command(subcommand)]
 	Config(ConfigCmd),
+
+	/// app alias management
 	#[command(subcommand)]
 	Alias(AliasCmd),
+
+	/// global variables management
 	#[command(subcommand)]
 	Var(VarCmd),
 }
 
-/// launch an application (with arguments, if needed)
-#[derive(Parser)]
-pub struct LaunchCmd {
-	/// application to be launched
-	pub app: String,
-	/// arguments (redirected to application, used if needed)
-	pub args: Vec<String>,
-	/// force launch (fails fast on issues)
-	#[arg(short, long)]
-	pub force: bool,
-	/// run the app in background (in a new terminal session)
-	#[arg(short, long)]
-	pub background: bool,
-}
-
-/// application management
 #[derive(Subcommand)]
 pub enum AppCmd {
-	Launch(LaunchCmd),
-	/// pretty-prints all information about an application based on definition
-	Info {
+	/// lists all apps (defined in config_path/apps/)
+	#[command(alias = "ls")]
+	List,
+
+	/// opens an app's definition file in your preferred text editor
+	Edit {
 		app: String,
 	},
-	/// lists all applications (defined in config_path/apps/)
-	List,
-	/// opens the specified application's definition file using your preferred text editor. (config.editor or $VISUAL or $EDITOR, falls back to `nano`/`notepad` if none are set)
-	Edit {
-		app: String
-	},
-	/// prints the specified application's raw definition file (TOML)
+
+	/// prints all information about an app
+	#[command(alias = "info")]
 	Print {
-		app: String
+		app: String,
+		#[arg(short, long)]
+		raw: bool,
 	},
-	/// creates a dummy application file for your application name opens it with your text editor.
-	/// treats {app} as the full name of the app
+
+	/// gets a key's value from an app's definition
+	Get {
+		app: String,
+		key: Option<String>,
+		#[arg(short, long)]
+		raw: bool,
+	},
+
+	/// sets a key's value in an app's definition
+	Set {
+		app: String,
+		key: String,
+		value: String,
+	},
+
+	/// unsets a key in an app's definition
+	Unset {
+		app: String,
+		key: String,
+	},
+
+	/// creates a dummy app definition file
+	#[command(alias = "new")]
 	Create {
-		app: String
+		app: String,
+		/// exclude comments and unnecessary data
+		#[arg(short, long)]
+		clean: bool,
+		/// automatically opens the created file in your text editor
+		#[arg(short, long)]
+		edit: bool,
 	},
-	/// creates a dummy application
-	/// treats {app} as the full name of the app
-	New {
-		app: String
-	},
-	/// deletes an application definition file (only definition (TOML) file, not the installed application).
-	/// requires full path to the app (e.g. "games/silksong")
+
+	/// deletes an app's definition file (toml only)
+	#[command(alias = "rm")]
+	#[command(alias = "remove")]
 	Delete {
 		app: String,
-		#[arg(short='y', long="yes")]
-		confirm: bool
+		/// skip confirmation prompts
+		#[arg(short, long)]
+		yes: bool,
 	},
 }
 
 /// global configuration management
 #[derive(Subcommand)]
 pub enum ConfigCmd {
-	/// opens the current global configuration file using your preferred text editor. (config.editor or $VISUAL or $EDITOR, falls back to `nano`/`notepad` if none are set)
-	Edit,
-	/// prints the raw global configuration file (TOML)
-	Print,
-	/// prints the path currently being used as the config path (aka where config.toml and apps/ are located)
+	/// prints the current config path
 	Path,
-	/// prints current config or the specified key
-	Get {
-		key: Option<String>
+
+	/// opens the global config file in your preferred text editor
+	Edit,
+
+	/// prints the current config
+	#[command(alias = "info")]
+	Print {
+		/// print raw toml
+		#[arg(short, long)]
+		raw: bool,
 	},
-	/// sets a config value (e.g. "editor" or "env.KEY")
+
+	/// gets a key from the config
+	Get {
+		key: Option<String>,
+		/// print raw toml when key is not specified
+		#[arg(short, long)]
+		raw: bool,
+	},
+
+	/// sets a key in the config
 	Set {
 		key: String,
 		value: String,
 	},
-	/// unsets a config value
+
+	/// unsets a key in the config
 	Unset {
-		key: String
+		key: String,
 	},
-	/// pretty-prints the entire configuration data
-	Info,
+
+	/// generates or regenerates a default config file
+	Init {
+		/// skip confirmation prompts
+		#[arg(short, long)]
+		yes: bool,
+		/// exclude comments and unnecessary data
+		#[arg(short, long)]
+		clean: bool,
+		/// automatically opens the created file in your text editor
+		#[arg(short, long)]
+		edit: bool,
+	},
 }
 
 /// alias management
 #[derive(Subcommand)]
 pub enum AliasCmd {
-	/// prints the value of an alias
-	Get {
-		alias: String
-	},
-	/// sets an app alias
-	Set {
-		alias: String,
-		value: String
-	},
-	/// unsets (remove) an app alias
-	Unset {
-		alias: String
-	},
-	/// lists all app aliases
+	/// lists all app aliases's resolved alias chain
+	#[command(alias = "ls")]
 	List,
-}
 
-/// global variables management
-#[derive(Subcommand)]
-pub enum VarCmd {
-	/// prints the value of a variable
+	/// returns the resolved alias chain for an app alias, or just the imediate value for it
 	Get {
-		key: String
+		key: String,
+		// don't resolve alias chain
+		#[arg(short, long)]
+		unresolved: bool,
 	},
-	/// sets a variable (accessible via %config.vars.key% or %key%)
+
+	/// sets an alias
 	Set {
 		key: String,
-		value: String
+		value: String,
 	},
-	/// removes a variable
+
+	/// unsets an alias
 	Unset {
-		key: String
+		key: String,
 	},
+}
+
+/// global variable management
+#[derive(Subcommand)]
+pub enum VarCmd {
 	/// lists all custom variables
+	#[command(alias = "ls")]
 	List,
+
+	/// gets a variable's value
+	Get {
+		key: String,
+	},
+
+	/// sets a variable
+	Set {
+		key: String,
+		value: String,
+	},
+
+	/// unsets a variable
+	Unset {
+		key: String,
+	},
 }

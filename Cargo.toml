@@ -1,26 +1,26 @@
 [package]
 name = "ran-launcher"
 description="ran - run anything now"
-version = "1.0.2"
+version = "2.0.0"
 edition = "2024"
 authors = ["Hasibix Hasi"]
 license = "Apache-2.0"
 repository = "https://github.com/Hasibix/ran"
 readme = "readme.md"
 keywords = [
-    "cli",
-    "launcher",
-    "tool",
-    "command-line",
-    "utility"
+	"cli",
+	"launcher",
+	"tool",
+	"command-line",
+	"utility"
 ]
 categories = ["command-line-utilities"]
 include = [
 	"res/**",
-    "src/**",
-    "Cargo.toml",
-    "readme.md",
-    "license*"
+	"src/**",
+	"Cargo.toml",
+	"readme.md",
+	"license*"
 ]
 
 [[bin]]
@@ -28,15 +28,21 @@ name = "ran"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0.102"
 atty = "0.2.14"
 clap = { version = "4.5.56", features = ["derive", "env"] }
 colored = "3.1.1"
 console = "0.16.2"
 dialoguer = "0.12.0"
-indexmap = "2.13.0"
+dirs = "6.0.0"
+editor-command = "2.0.0"
+indexmap = { version = "2.13.0", features = ["serde"] }
+open = "5.3.3"
 regex = "1.12.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+shell-words = "1.1.1"
 terminal_size = "0.4.3"
 toml = "1.0.1"
+toml_edit = "0.25.3"
 walkdir = "2.5.0"

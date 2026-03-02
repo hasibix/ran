@@ -1,71 +1,193 @@
 # ran
 
-ran (pronounced "rAen"), short for "Run Anything Now", is a command-line launcher tool for launching games and applications. It uses application definition files (TOML) to define how to launch applications, and supports features like command-line arguments, environment variables, and more.
+ran (pronounced "rAen"), short for "Run Anything Now", is a command-line launcher for games and applications. it uses toml-based application definition files to define how to launch programs and supports features like per-app commands, variables, environment overrides, and more.
 
-## Features
+## features
 
-- Launching games and applications from the command line
-- TOML-based application definition files
-- Custom globally-defined variables for use in application definitions
-- Environment overriding (global and per-application)
-- Support for command-line arguments passing
-- Cross-platform support (Windows, macOS, Linux)
-- Application aliases (and aliases for aliases)
-- Config directory override (using $RANCFG)
-- Deriving other application definitions (using @name_alias_or_fullname in exec.bin)
+- launching games and applications from the command line
+- toml-based application definition files (`apps/`)
+- custom variables per app (`[vars]`) and global variables (`[config.vars]`)
+- environment overrides (global and per-app)
+- multiple commands per app (`[cmds.<name>]`), `launch` is the default
+- cross-platform support (windows, macos, linux)
+- application aliases (and alias chaining)
+- config directory override via `$RANCFG`
+- deriving other apps with `@name_alias_or_fullname <command>` in `cmds.<name>.bin`
+- interactive and noninteractive modes
 
-  etc.
+---
 
-## Installation
+## installation
 
-Since ran is a single executable, you can just download it from the [releases page](https://github.com/hasibix/ran/releases/latest) and add it to your PATH to "install" ran.
+you can build and install the latest version of ran-launcher from crates.io by running:
 
-Or you can skip adding it to PATH and just use from the directory you downloaded it into.
-
-Alternatively, you can clone this repository using git then compile it yourself and install it by running:
-
+```bash
+cargo install ran-launcher
 ```
+
+or to build and install from source:
+
+```bash
+git clone https://github.com/Hasibix/ran
+cd ran
 cargo install --path .
+# or
+cargo build --release # for just building the executable
 ```
 
-(assuming you have Rust set up.)
+(make sure you have rust installed to use the commands mentioned above)
 
-## Usage
+alternatively, you can download the latest release from the [releases page](https://github.com/Hasibix/ran/releases/latest) and add it to your `PATH`, or run it from the directory you downloaded it into.
 
-To use RAN, you need to create application definition files in the `apps` directory. Simply run:
+---
 
-```
-ran app create <full name for app, e.g. games/mygame>
-```
+## usage
 
-This should create a template app definition in \<config location\>/apps/\<full name for app\>.toml and open it inside your preferred text editor.
-After you modify the template, save the file and exit. Now run:
+to create a new app definition:
 
-```
-ran launch <full name, alias (defined in config.toml), or simple name>
+```bash
+ran app create <full app name, e.g., games/mygame> --edit
 ```
 
-to launch your application.
+this creates a template toml file in `<config_path>/apps/<full app name>.toml` and opens it in your preferred editor.
 
-For more details, you can run `ran help` to get info about ran or a specific command.
+after editing the template, save the file and exit. you can now run your app:
 
-# License
-
-```
-   Copyright 2026 Hasibix Hasi
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
+```bash
+ran launch <app full name or alias>
 ```
 
-For more details, consult the [license file](https://github.com/hasibix/ran/blob/main/license).
+to run a specific command for the app:
+
+```bash
+ran cmd <command> <app name> [args...] [--background]
+```
+
+---
+
+## example app definition
+
+```toml
+[meta]
+name = "mygame"
+description = "an example game"
+version = "0.1.0"
+
+[vars]
+DATA_PATH = "/home/user/.mygame"
+
+[env]
+PATH = "/usr/local/bin:$PATH"
+
+[cmds.launch]
+bin = "mygame_executable"
+args = ["--fullscreen", "$DATA_PATH"]
+env = { DEBUG = "1" }
+
+[cmds.debug]
+bin = "mygame_executable"
+args = ["--windowed", "--debug", "$DATA_PATH"]
+```
+
+### explanation
+
+- `[meta]`: metadata about your app
+- `[vars]`: variables that can be used in `args` or `env`
+- `[env]`: environment overrides applied when the app runs
+- `[cmds.<name>]`: commands you can execute for this app. `launch` is the default
+- in `args` or `env`, variables are referenced as `$VAR` or `${nested_var}`
+
+---
+
+## updating old app definitions (v1.x → v2.0.0)
+
+1. move the `exec` table to `cmds.launch`:
+
+```toml
+# old
+[exec]
+bin = "mygame_executable"
+args = ["%!"]
+
+# new
+[cmds.launch]
+bin = "mygame_executable"
+args = []
+```
+
+2. remove `%!` from `args` if you don't need to specify where CLI arguments would go to.
+3. update variable references:
+
+```toml
+# old v1.x
+args = ["%DATA_PATH%", "%VAR%", "%config.vars.VAR%"]
+
+# new v2.0.0
+args = ["$DATA_PATH", "$VAR", "${config.vars.VAR}"] # you can use '$$' for escaping variable expansion
+```
+
+4. optionally add more commands under `[cmds.<name>]` for debugging or custom run modes.
+
+---
+
+## cli overview
+
+```
+ran launch <app name> [args...] [--background]
+ran cmd <command> <app name> [args...] [--background]
+
+ran app <subcommand>
+ran config <subcommand>
+ran alias <subcommand>
+ran var <subcommand>
+```
+
+examples:
+
+```bash
+# launch default command
+ran launch games/mygame
+
+# run a specific command
+ran cmd debug games/mygame --background
+
+# list all apps
+ran app list
+
+# edit an app definition
+ran app edit games/mygame
+```
+
+---
+
+## editing configuration and apps
+
+ran automatically uses:
+
+1. `$EDITOR` or `$VISUAL` environment variable if set
+2. OS-wide preferred application for `.toml` files
+3. fallback to `nano` (unix) or `notepad` (windows)
+
+for editing config or app definition files.
+
+---
+
+## license
+
+```
+Copyright 2026 Hasibix Hasi
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+for more details, consult the [license file](https://github.com/Hasibix/ran/blob/main/license).

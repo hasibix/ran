@@ -1,165 +1,195 @@
-#![allow(dead_code)]
-
 // --- imports ---
-use std::collections::HashMap;
-use std::path::PathBuf;
+use anyhow::{anyhow, bail, Result};
+use indexmap::IndexMap as Map;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-
 use crate::app::App;
 use crate::config::Config;
-use crate::error::{Err, LE};
-use crate::utils::{app_resolver, sandwich_args, expand_vars};
+use crate::resolver::Resolver;
+use crate::util::args::sandwich_args;
 
 // --- definitions ---
-pub struct ResolvedParts {
-	pub bin: String,
-	pub args: Vec<String>,
-	pub env: HashMap<String, String>,
-}
-
 pub struct Launcher {
-	pub apps: HashMap<String, PathBuf>,
+	pub apps: Map<String, PathBuf>,
 	pub config: Config,
 }
 
 // --- implementations ---
 impl Launcher {
-	/// resolves alias chain, and errors on circular references, returning the full chain for better error messages
-	pub fn resolve_alias_chain(&self, start_key: &str) -> Err<Vec<String>> {
-		let mut chain = vec![start_key.to_string()];
-		let mut current = start_key;
-
-		// keep looking up while the value exists in the alias map
-		// and avoid infinite loops
-		while let Some(next) = &self.config.alias.get(current) {
-			if chain.contains(next) {
-				chain.push(next.to_string());
-				return Err(LE::CircularAlias(chain))
-			}
-			chain.push(next.to_string());
-			current = next;
+	/// interactively resolve app name conflicts
+	pub fn conflict_resolver<'p>(
+		&self,
+		query: &str,
+		matches: Vec<&'p Path>
+	) -> Result<&'p Path> {
+		// check if we are allowed to be interactive
+		if self.config.noninteractive || !atty::is(atty::Stream::Stdout) {
+			bail!(
+				"multiple results for query '{query}': {}",
+				matches
+				.iter()
+				.map(|&p| p.to_string_lossy().into_owned())
+				.collect::<Vec<String>>()
+				.join(", ")
+			);
 		}
-		Ok(chain)
+
+		// interactive selection
+		use dialoguer::{theme::ColorfulTheme, Select};
+
+		let items: Vec<String> = matches
+		.iter()
+		.map(|p| p.to_string_lossy().to_string())
+		.collect();
+
+		let selection = Select::with_theme(&ColorfulTheme::default())
+		.with_prompt("multiple apps found. please select one:")
+		.items(&items)
+		.default(0)
+		.interact_opt()?;
+
+		match selection {
+			Some(index) => Ok(matches[index]),
+			None => bail!("cancelled app selection."), // esc/ctrl+c
+		}
 	}
 
 	/// (private) finds app from query with stack tracking
-	fn find_app_inner(&self, query: &str, stack: Vec<String>) -> Err<&PathBuf> {
+	fn find_app_inner(&self, query: &str, stack: Vec<String>) -> Result<&Path> {
 		if stack.contains(&query.into()) {
 			let mut stack = stack;
 			stack.push(query.into());
-			return Err(LE::CircularAlias(stack));
+			bail!("infinite recursion in alias expansion: {}", stack.join(" -> "));
 		}
 		let query = query.trim().trim_matches('/');
-		if query.is_empty() { return Err(LE::AppNotFound(query.into())); }
+		if query.is_empty() { bail!("app definition not found for '{query}'") }
 
-		if let Some(app) = self.config.alias.get(query) {
-			let mut stack = stack;
-			stack.push(query.to_string());
-			return self.find_app_inner(app, stack);
+		if let Some(alias) = &self.config.alias {
+			if let Some(app) = alias.get(query) {
+				let mut stack = stack;
+				stack.push(query.to_string());
+				return self.find_app_inner(app, stack);
+			}
 		}
 
-		let matches: Vec<&PathBuf> = self.apps.iter()
+		let matches: Vec<&Path> = self.apps.iter()
 		.filter(|(full_name, _)| {
 			let leaf_name = full_name.split('/').last().unwrap_or(full_name);
 			full_name == &query || leaf_name == query
 		})
-		.map(|(_, path)| path)
+		.map(|(_, path)| path.as_path())
 		.collect();
 
 		if matches.len() > 0 {
 			match matches.len() {
-				1 => Ok(matches.get(0).ok_or(LE::AppNotFound(query.into()))?),
-				_ => Ok(app_resolver(self, query, matches)?)
+				1 => Ok(matches.get(0).ok_or(anyhow!("app definition not found for {query}"))?),
+				_ => Ok(self.conflict_resolver(query, matches)?)
 			}
 		} else {
-			Err(LE::AppNotFound(query.into()))
+			bail!("app definition not found for {query}");
 		}
 	}
 
 	/// finds app from query, resolving aliases, and errors on circular references
-	pub fn find_app(&self, query: &str) -> Err<&PathBuf> {
+	pub fn find_app(&self, query: &str) -> Result<&Path> {
 		self.find_app_inner(query, vec![])
 	}
 
 	/// loads app from query, resolving aliases, and errors on circular references
-	pub fn load_app(&self, query: &str) -> Err<App> {
+	pub fn load_app(&self, query: &str) -> Result<App> {
 		let path = self.find_app(query)?;
-		let content = std::fs::read_to_string(path)?;
+		let content = fs::read_to_string(path)?;
 		Ok(toml::from_str(&content)?)
 	}
 
 	/// loads app from path, without resolving aliases
-	pub fn load_app_from(&self, path: &PathBuf) -> Err<App> {
-		let content = std::fs::read_to_string(path)?;
+	pub fn load_app_from(&self, path: &Path) -> Result<App> {
+		let content = fs::read_to_string(path)?;
 		Ok(toml::from_str(&content)?)
 	}
 
 	/// initializes launcher by scanning for apps and loading config
-	pub fn init(path: &PathBuf) -> Err<Launcher> {
-		let apps = App::find_all(path);
-
-		let config = std::fs::read_to_string(path.join("config.toml"))
-		.map_err(LE::from)
-		.and_then(|c| toml::from_str(&c).map_err(LE::from))?;
-
+	pub fn init(config_path: &Path, config: Config) -> Result<Launcher> {
+		let app_path = config_path.join("apps");
+		if !app_path.exists() {
+			fs::create_dir_all(app_path)?;
+		}
+		let apps = App::find_all(config_path);
 		Ok(Launcher {
 			apps,
 			config,
 		})
 	}
 
-	/// launches an app by query with cli args and env, resolving aliases, and errors on circular references
+	/// launch an app by query with a specified command, with cli args and env, resolving aliases, and errors on circular references
 	pub fn launch_app(
 		&self,
+		cmd: &str,
 		query: &str,
-		cli_args: Vec<String>,
-		cli_env: HashMap<String, String>,
+		args: Vec<String>,
+		env: Map<String, String>,
 		background: bool
-	) -> Err<()> {
+	) -> Result<()> {
+		let resolver = Resolver::new(self);
+
 		// 1. resolve @chain
 		let path = self.find_app(query)?;
-		let name = self.apps.iter().find(|(_, p)| *p == path).map(|(n, _)| n).ok_or(LE::AppNotFound(query.into()))?;
-		let target_app = self.load_app_from(path)?;
-		let parts = target_app.resolve_recursive(self)?;
+		let name = self.apps.iter().find(|(_, p)| *p == path).map(|(n, _)| n).ok_or(anyhow!("app definition not found for {query}"))?;
+		let app = self.load_app_from(path)?;
+		let parts = resolver.resolve_command(&app, cmd)?;
 
 		// 2. sandwich args (%! replacement)
-		let intermediate_args = sandwich_args(parts.args, cli_args);
+		let intermediate_args = sandwich_args(parts.args, args);
 
 		// 3. layer envs
-		let mut final_env = cli_env;
-		final_env.extend(self.config.env.clone());
+		let mut final_env = env;
+		if let Some(env) = &self.config.env {
+			final_env.extend(env.clone());
+		}
 		final_env.extend(parts.env);
 
-		// 4. resolve %vars% (only on what we are about to use)
-		let final_bin = expand_vars(&parts.bin, self);
+		// 4. resolve variable (only on what we are about to use)
+		let final_bin = resolver.expand(Some(&app), &parts.bin)?;
 
-		let final_args: Vec<String> = intermediate_args.into_iter()
-		.map(|arg| expand_vars(&arg, self))
-		.collect();
+		let final_args: Vec<String> = intermediate_args
+			.into_iter()
+			.map(|arg| resolver.expand(Some(&app), &arg))
+			.collect::<Result<Vec<_>>>()?;
 
-		let final_env: HashMap<String, String> = final_env.into_iter()
-		.map(|(k, v)| (k, expand_vars(&v, self)))
-		.collect();
+		let final_env: Map<String, String> = final_env
+			.into_iter()
+			.map(|(k, v)| {
+				resolver.expand(Some(&app), &v)
+					.map(|expanded| (k, expanded))
+			})
+			.collect::<Result<Map<_, _>>>()?;
 
 		// 5. build and launch
 		if background {
-			let mut cmd = Command::new(final_bin);
-			cmd.args(final_args)
+			let mut proc = Command::new(final_bin);
+			proc.args(final_args)
 				.stdin(Stdio::null())
 				.stdout(Stdio::null())
 				.stderr(Stdio::null())
 				.current_dir(std::env::current_dir()?);
 			// spawn and immediately forget
-			let _ = cmd.spawn();
-			println!("launched app {} in background!", name);
+			let _ = proc.spawn();
+			match cmd {
+				"launch" => println!("launched app '{name}' in the background!"),
+				_ => println!("started executing command '{cmd}' for app '{name}' in the background!"),
+			}
 		} else {
-			let mut cmd = Command::new(final_bin);
-			cmd.args(final_args).envs(final_env).current_dir(std::env::current_dir()?);
+			let mut proc = Command::new(final_bin);
+			proc.args(final_args).envs(final_env).current_dir(std::env::current_dir()?);
 			// wait for exit
-			println!("launching app {}...", name);
-			let status = cmd.status()?;
+			match cmd {
+				"launch" => println!("launching app '{name}'..."),
+				_ => println!("running command '{cmd}' for app '{name}'..."),
+			}
+			let status = proc.status()?;
 			if !status.success() {
-				eprintln!("process exited with: {}", status);
+				eprintln!("process exited with {}", status);
 			}
 		}
 		Ok(())

@@ -5,15 +5,20 @@ name = "My Application"
 description = "Very cool application"
 version = "1.0"
 
-# executable data
-[exec]
-# binary name/path, %variables% or @appname
-# bin = "bash"
-# command-line arguments
-# you must include "%!" in the arguments list where you want all the command-line arguments (and/or derivative applications' arguments) to go to.
-args = ["%!"]
+# local variables
+[vars]
 
-# environment variables for this application.
-# example:
-# MANGOHUD = 1
+# local environment vairables
+# (applies to all commands)
 [env]
+
+# launch command (you can define your own commands using cmds.NAME)
+[cmds.launch]
+# binary name/path, $variables, ${variables.or.${fields}} or @appname
+bin = "bash"
+# command-line arguments
+# you can include "%!" in the arguments list where you want all the command-line arguments
+# (and/or derivative applications' arguments) to go to. but it's not required.
+args = []
+# environment variables for launch command.
+env = {}

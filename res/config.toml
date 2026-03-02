@@ -3,27 +3,26 @@
 # also you CAN'T use variables here.
 
 # whether to ask for interactive prompt on conflicting app query (e.g. if query can refer to 2 or more apps)
-# set to false if you want it to fail-fast on conflict without trying to show a dialogue/prompt.
-interactive = true
-# the text editor of your choice. this is used for editing app definition files and the config file itself.
-# you can remove this or comment it out to let ran use $EDITOR, $VISUAL or nano/notepad if those are not set.
-# editor = "nano"
+# set to true if you want it to fail-fast on conflict without trying to show a dialogue/prompt.
+noninteractive = false
 
-# aliases for your applications.
+# aliases for your apps.
 # example:
 # hks = "games/silksong"
 # song = "silksong"
 # ss = "hks" -- yes, you can use aliases to refer to aliases.
 [alias]
 
-# custom variables for your applications. (not environment variables. these are meant to be used in app definition files.)
+# custom variables for all of your apps.
+# (not environment variables. these are meant to be used in app definition files.)
 # example:
 # gamepath = "/data/apps/games"
-# now you can use %gamepath% anywhere in your application definition file to refer to this variable.
+# now you can use $gamepath in your app definition file (in cmds.* fields) to refer to this variable.
 [vars]
 
-# global environment variable overrides. (Global meaning this applies to all apps. can be overriden
-# by specific apps, but not command line environment)
+# global environment variable overrides.
+# (global meaning this applies to all apps.
+# can be overriden by specific apps or commands, but not by command line environment)
 # example:
 # WINEPREFIX = "/data/apps/.prefixes/wine_common"
 [env]
