@@ -1,8 +1,8 @@
-# Version 2.0.1
+# version 2.0.1
 * fixed alias chain resolving for `ran alias list` and `ran alias get <alias>`.
 * fixed a bug in which `ran config set alias.KEY` would set to `config.env` map instead of `config.alias` map.
 
-# Version 2.0.0
+# version 2.0.0
 * complete overhaul of ran's internal architecture; ~60% rewrite of the codebase.
 * centralized CLI handling in `handler.rs`, drastically reducing `main.rs` size and spaghetti code.
 * added `resolver.rs` to handle alias chains, variable expansion, and per-app command resolution.
@@ -21,12 +21,12 @@
 
 check [readme.md](https://github.com/hasibix/ran/blob/main/readme.md) on how to update your app definitions and config files.
 
-# Version 1.0.2
+# version 1.0.2
 * fixed config path resolution to make it work correctly across platforms.
 * fixed issues on Windows where `ran` would refuse to run when unable to resolve a default config path, even if a config path was provided via $RANCFG.
 
-# Version 1.0.1
+# version 1.0.1
 * made launched programs run in the same directory as `ran` was executed from.
 
-# Version 1.0.0
+# version 1.0.0
 * initial release

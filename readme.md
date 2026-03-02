@@ -1,5 +1,8 @@
 # ran
 
+[![crates.io](https://img.shields.io/crates/v/ran-launcher.svg)](https://crates.io/crates/ran-launcher)
+[![github actions](https://github.com/hasibix/ran/actions/workflows/release.yml/badge.svg)](https://github.com/hasibix/ran/actions/workflows/release.yml)
+
 ran (pronounced "rAen"), short for "Run Anything Now", is a command-line launcher for games and applications. it uses toml-based application definition files to define how to launch programs and supports features like per-app commands, variables, environment overrides, and more.
 
 ran is useful when you have multiple apps with complex launch arguments and want a reusable, cross-platform configuration.
