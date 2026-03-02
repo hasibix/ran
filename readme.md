@@ -12,7 +12,7 @@ ran (pronounced "rAen"), short for "Run Anything Now", is a command-line launche
 - cross-platform support (windows, macos, linux)
 - application aliases (and alias chaining)
 - config directory override via `$RANCFG`
-- deriving other apps with `@name_alias_or_fullname <command>` in `cmds.<name>.bin`
+- deriving other apps with `@name_alias_or_fullname [command]` in `cmds.<name>.bin`
 - interactive and noninteractive modes
 
 ---
@@ -23,6 +23,8 @@ you can build and install the latest version of ran-launcher from crates.io by r
 
 ```bash
 cargo install ran-launcher
+# or
+cargo install ran-launcher@VERSION # for a specific version
 ```
 
 or to build and install from source:
@@ -130,7 +132,7 @@ args = ["$DATA_PATH", "$VAR", "${config.vars.VAR}"] # you can use '$$' for escap
 
 ---
 
-## cli overview
+## CLI overview
 
 ```
 ran launch <app name> [args...] [--background]
