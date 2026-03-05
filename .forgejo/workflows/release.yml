@@ -20,8 +20,7 @@ jobs:
             - name: Read version
               id: get_version
               run: |
-                  VERSION=$(cat version.txt | tr -d " \n\r")
-                  echo "version=$VERSION" >> $GITEA_OUTPUT
+                  echo "::set-output $(cat version.txt | tr -d " \n\r")"
 
             - name: Download build artifacts
               uses: actions/download-artifact@v4

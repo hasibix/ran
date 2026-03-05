@@ -19,12 +19,6 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Read version
-              id: get_version
-              run: |
-                  VERSION=$(cat version.txt | tr -d " \n\r")
-                  echo "version=$VERSION" >> $GITEA_OUTPUT
-
             - name: Install Rust
               run: |
                   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
