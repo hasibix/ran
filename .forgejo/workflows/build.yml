@@ -21,19 +21,20 @@ jobs:
               with:
                   persist-credentials: false
 
-            - name: Install Rust
-              run: |
-                  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-                  echo "$HOME/.cargo/bin" >> $FORGEJO_PATH
-
             - name: Install deps
               run: |
                   dpkg --add-architecture i386
                   apt update
                   apt install -y \
+                    curl
                     gcc-multilib g++-multilib libc6-dev-i386 \
                     gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 \
                     zip unzip tar
+
+            - name: Install Rust
+              run: |
+                  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+                  echo "$HOME/.cargo/bin" >> $FORGEJO_PATH
 
             - name: Install Rust target
               run: rustup target add ${{ matrix.target }}
