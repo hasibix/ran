@@ -42,6 +42,7 @@ jobs:
                   direction: upload
                   tag: ${{ steps.get_version.outputs.version }}
                   title: ${{ steps.get_version.outputs.version }}
+                  token: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
                   release-notes-file: release.md
                   prerelease: false
                   release-dir: dist
