@@ -14,6 +14,7 @@ jobs:
                     - x86_64-unknown-linux-gnu
                     - i686-pc-windows-gnu
                     - x86_64-pc-windows-gnu
+
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -32,11 +33,9 @@ jobs:
                     gcc-mingw-w64-i686 gcc-mingw-w64-x86-64
 
             - name: Install Rust target
-              env:
               run: rustup target add ${{ matrix.target }}
 
             - name: Build
-              env:
               run: cargo build --release --target ${{ matrix.target }}
 
             - name: Package artifact
