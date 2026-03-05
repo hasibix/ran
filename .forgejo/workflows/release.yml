@@ -22,7 +22,8 @@ jobs:
             - name: Read version
               id: get_version
               run: |
-                  echo "::set-output $(cat version.txt | tr -d " \n\r")"
+                  VERSION=$(cat version.txt | tr -d " \n\r")
+                  echo "version=$VERSION" >> $FORGEJO_OUTPUT
 
             - name: Install deps
               run: |
@@ -43,6 +44,6 @@ jobs:
                   tag: ${{ steps.get_version.outputs.version }}
                   title: ${{ steps.get_version.outputs.version }}
                   token: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
-                  release-notes-file: release.md
+                  release-notes-file: ./release.md
                   prerelease: false
                   release-dir: dist
