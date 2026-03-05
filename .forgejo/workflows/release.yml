@@ -24,6 +24,11 @@ jobs:
               run: |
                   echo "::set-output $(cat version.txt | tr -d " \n\r")"
 
+            - name: Install deps
+              run: |
+                  apt update
+                  apt install -y zip unzip tar
+
             - name: Download build artifacts
               uses: forgejo/download-artifact@v4
               with:
