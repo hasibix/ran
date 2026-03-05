@@ -5,7 +5,7 @@ version = "2.0.2"
 edition = "2024"
 authors = ["Hasibix Hasi"]
 license = "Apache-2.0"
-repository = "https://github.com/Hasibix/ran"
+repository = "https://codeberg.org/hasibix/ran"
 readme = "readme.md"
 keywords = [
 	"cli",

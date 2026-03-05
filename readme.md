@@ -1,7 +1,7 @@
 # ran
 
 [![crates.io](https://img.shields.io/crates/v/ran-launcher.svg)](https://crates.io/crates/ran-launcher)
-[![github actions](https://github.com/hasibix/ran/actions/workflows/release.yml/badge.svg)](https://github.com/hasibix/ran/actions/workflows/release.yml)
+[![forgejo actions](https://codeberg.org/hasibix/ran/actions/workflows/release.yml/badge.svg)](https://codeberg.org/hasibix/ran/actions/workflows/release.yml)
 
 ran (pronounced "rAen"), short for "Run Anything Now", is a command-line launcher for games and applications. it uses toml-based application definition files to define how to launch programs and supports features like per-app commands, variables, environment overrides, and more.
 
@@ -14,7 +14,7 @@ ran is useful when you have multiple apps with complex launch arguments and want
 - custom variables per app and global variables (`[vars]`)
 - environment overrides (global, per-app and per-command) (`[env]` or `[cmds.<name>.env]`)
 - multiple commands per app (`[cmds.<name>]`), `launch` is the default
-- cross-platform support (windows, macos, linux)
+- cross-platform support (windows and linux)
 - application aliases (and alias chaining)
 - config directory override via `$RANCFG`
 - deriving other apps with `@name_alias_or_fullname [command]` in `cmds.<name>.bin`
@@ -35,7 +35,7 @@ cargo install ran-launcher@VERSION # for a specific version
 or to build and install from source:
 
 ```bash
-git clone https://github.com/Hasibix/ran
+git clone https://codeberg.org/hasibix/ran
 cd ran
 cargo install --path .
 # or
@@ -44,7 +44,10 @@ cargo build --release # for just building the executable
 
 (make sure you have rust installed to use the commands mentioned above)
 
-alternatively, you can download the latest release from the [releases page](https://github.com/Hasibix/ran/releases/latest) and add it to your `PATH`, or run it from the directory you downloaded it into.
+alternatively, you can download the latest release from the [releases page](https://codeberg.org/hasibix/ran/releases/latest) and add it to your `PATH`, or run it from the directory you downloaded it into.
+
+> NOTE:
+> macOS builds are currently not being released due to complexity of cross-compiling from Linux to macOS. if you're on macOS, you can either use `cargo install` or build from source, which compiles ran on your machine.
 
 ---
 
@@ -225,7 +228,7 @@ ran config edit
 ## contributing
 
 ran is a small open source project and any feedback or fixes are appreciated.  
-if you want to help, check out [`contributing.md`](https://github.com/Hasibix/ran/blob/main/contributing.md) for info on how to report bugs, request features, or open a pull request.
+if you want to help, check out [`contributing.md`](https://codeberg.org/hasibix/ran/src/branch/main/contributing.md) for info on how to report bugs, request features, or open a pull request.
 
 if you're unsure about something, feel free to open an issue to discuss it.
 
@@ -249,4 +252,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-for more details, consult the [license file](https://github.com/Hasibix/ran/blob/main/license).
+for more details, consult the [license file](https://codeberg.org/hasibix/ran/src/branch/main/license).

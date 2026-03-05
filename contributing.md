@@ -7,7 +7,7 @@ this file explains how to report bugs, request features, and send pull requests.
 
 ## reporting bugs
 
-if you run into a bug, please open an issue on GitHub with:
+if you run into a bug, please open an issue with:
 
 * your operating system (windows/macOS/linux and version if possible)  
 * the ran version (`ran --version`)  

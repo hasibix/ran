@@ -1,3 +1,7 @@
+# version 2.0.2
+* fixed stack overflow on an app using itself to launch itself.
+* moved Git repo from GitHub to Codeberg.
+
 # version 2.0.1
 * fixed alias chain resolving for `ran alias list` and `ran alias get <alias>`.
 * fixed a bug in which `ran config set alias.KEY` would set to `config.env` map instead of `config.alias` map.
@@ -19,7 +23,7 @@
 * gracefully handles missing `config_path/apps/` directory without errors or hiccups.
 * numerous small bug fixes and code cleanups throughout (`resolver`, `launcher`, `cli`, `app`, `config`).
 
-check [readme.md](https://github.com/hasibix/ran/blob/main/readme.md) on how to update your app definitions and config files.
+check [readme.md](https://codeberg.org/hasibix/ran/src/branch/main/readme.md) on how to update your app definitions and config files.
 
 # version 1.0.2
 * fixed config path resolution to make it work correctly across platforms.
