@@ -5,7 +5,7 @@ on:
 
 jobs:
     build:
-        runs-on: codeberg-tiny
+        runs-on: codeberg-medium
         uses: ./.forgejo/workflows/build.yml
 
     release:
