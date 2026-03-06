@@ -25,6 +25,12 @@ jobs:
                   VERSION=$(cat version.txt | tr -d " \n\r")
                   echo "version=$VERSION" >> $FORGEJO_OUTPUT
 
+            - name: Read notes
+              id: get_notes
+              run: |
+                  NOTES=$(cat release.md | tr -d " \n\r")
+                  echo "notes=$NOTES" >> $FORGEJO_OUTPUT
+
             - name: Install deps
               run: |
                   apt update
@@ -44,6 +50,6 @@ jobs:
                   tag: ${{ steps.get_version.outputs.version }}
                   title: ${{ steps.get_version.outputs.version }}
                   token: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
-                  release-notes-file: ./release.md
+                  release-notes: ${{ steps.get_notes.outputs.notes }}
                   prerelease: false
                   release-dir: dist
